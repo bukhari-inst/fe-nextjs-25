@@ -15,18 +15,70 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import { signInService } from '@/services/data-types/auth-service-type';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState<Record<string, boolean>>({});
+
+  const [token, setToken] = useState(Cookies.get('token') || '');
+  const router = useRouter();
+
+  useEffect(() => {
+    if (token) {
+      router.push('/');
+    }
+  }, [router]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setIsError((prevError) => ({ ...prevError, [name]: false }));
+  };
 
   const handleClickShowPassword = () => setShowPassword((show) => !show);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
-    // Login logic will go here
-    setTimeout(() => setIsLoading(false), 2000);
+    try {
+      const submitData = new FormData(e.currentTarget);
+
+      const response = await signInService(submitData);
+      if (response.error) {
+        if (response.message == 'Token has expired') {
+          Cookies.remove('token');
+          router.push('/');
+        } else if (response.message) {
+          if (typeof response.message === 'object') {
+            Object.entries(response.message).forEach(([key, value]) => {
+              if (Array.isArray(value)) {
+                setIsError((prevError) => ({ ...prevError, [key]: true }));
+                toast.error(value[0]);
+              }
+            });
+          } else {
+            toast.error(response.message);
+          }
+        }
+      } else {
+        const token = response.data.data.token;
+        const tokenBase64 = btoa(token);
+        Cookies.set('token', tokenBase64, { expires: 1 });
+        toast.success(response.data.message);
+        router.push('/');
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Something went wrong';
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -48,6 +100,8 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit}>
             <Stack spacing={2}>
               <TextField
+                error={isError.email}
+                onChange={handleChange}
                 fullWidth
                 label="Email Address"
                 name="email"
@@ -72,6 +126,9 @@ export default function LoginPage() {
                       borderBottomColor: '#6366f1',
                     },
                     '&:after': { borderBottomColor: '#6366f1' },
+                  },
+                  '& .MuiInput-input': {
+                    color: 'black',
                   },
                   '& .MuiInputLabel-root': { color: '#9ca3af' },
                   '& .MuiInputLabel-root.Mui-focused': { color: '#6366f1' },
@@ -117,6 +174,9 @@ export default function LoginPage() {
                       },
                       '&:after': { borderBottomColor: '#6366f1' },
                     },
+                    '& .MuiInput-input': {
+                      color: 'black',
+                    },
                     '& .MuiInputLabel-root': { color: '#9ca3af' },
                     '& .MuiInputLabel-root.Mui-focused': { color: '#6366f1' },
                   }}
@@ -135,7 +195,7 @@ export default function LoginPage() {
                 fullWidth
                 type="submit"
                 variant="contained"
-                disabled={isLoading}
+                loading={isLoading}
                 className="bg-indigo-600 hover:bg-indigo-700 py-3 text-lg font-bold shadow-lg shadow-indigo-500/30 normal-case rounded-xl transition-all duration-300"
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}

@@ -45,7 +45,7 @@ export default function ProductCategoryEdit() {
     setFormValues((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSumbit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     try {
@@ -98,7 +98,7 @@ export default function ProductCategoryEdit() {
   return (
     <Layout>
       <h1 className="text-black text-2xl font-bold">Product Category Edit</h1>
-      <form onSubmit={handleSumbit} className="w-full">
+      <form onSubmit={handleSubmit} className="w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
           <TextField
             error={isError.name}

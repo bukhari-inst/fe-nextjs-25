@@ -1,3 +1,4 @@
+import { signOutService } from '@/services/data-types/auth-service-type';
 import {
   Avatar,
   Box,
@@ -8,7 +9,10 @@ import {
   Typography,
 } from '@mui/material';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React from 'react';
+import { toast } from 'react-toastify';
+import Cookies from 'js-cookie';
 
 const settings = [
   { name: 'Profile', href: '/profile' },
@@ -20,6 +24,7 @@ export default function Navbar() {
   const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(
     null
   );
+  const router = useRouter();
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
@@ -28,6 +33,23 @@ export default function Navbar() {
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
   };
+
+  const onLogout = async () => {
+    try {
+      const response = await signOutService();
+
+      if (response.error) {
+        toast.error(response.message);
+      } else {
+        Cookies.remove('token');
+        await router.push('/login');
+        toast.success(response.data.message);
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   return (
     <nav className="w-full relative bg-gray-800">
       <div className="mx-auto max-w-7xl px-2 sm:px-6 lg:px-8">
@@ -106,11 +128,18 @@ export default function Navbar() {
               >
                 {settings.map((setting) => (
                   <MenuItem key={setting.name} onClick={handleCloseUserMenu}>
-                    <Link href={setting.href} className="w-full text-start">
-                      <Typography sx={{ textAlign: 'start' }}>
-                        {setting.name}
-                      </Typography>
-                    </Link>
+                    {/* <Link href={setting.href} className="w-full text-start"> */}
+                    <Typography
+                      sx={{ textAlign: 'start' }}
+                      onClick={setting.name === 'Logout' ? onLogout : undefined}
+                      component={setting.name === 'Logout' ? 'div' : Link}
+                      href={
+                        setting.name === 'Logout' ? undefined : setting.href
+                      }
+                    >
+                      {setting.name}
+                    </Typography>
+                    {/* </Link> */}
                   </MenuItem>
                 ))}
               </Menu>
