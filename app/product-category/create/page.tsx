@@ -43,7 +43,7 @@ export default function ProductCategoryCreate() {
           }
         }
       } else {
-        toast.success(response.message);
+        toast.success(response.data.message);
         router.push('/product-category');
       }
     } catch (error) {
